@@ -45,18 +45,19 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
-    Core/Src/epd.c
-    Core/Src/GUI_Paint.c
-    Core/Src/font8.c
-    Core/Src/font12.c
-    Core/Src/font24.c
-    Core/Src/font31.c
-    Core/Src/font42.c
+    Modules/EPD/epd.c
+    Modules/EPD/GUI_Paint.c
+    Modules/EPD/font8.c
+    Modules/EPD/font12.c
+    Modules/EPD/font24.c
+    Modules/EPD/font31.c
+    Modules/EPD/font42.c
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
+    Modules/EPD
 )
 
 # Add project symbols (macros)
