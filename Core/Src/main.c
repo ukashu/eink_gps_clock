@@ -24,10 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "stdio.h"
-#include "epd.h"
-#include "GUI_Paint.h"
-#include <stdlib.h>
+#include "epd_util.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -70,116 +67,6 @@ int __io_putchar(int ch)
     return 1;
 }
 
-int DEV_Module_Init(void)
-{
-    HAL_GPIO_WritePin(EPD_DC_GPIO_Port, EPD_DC_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(EPD_CS_GPIO_Port, EPD_CS_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(EPD_RST_GPIO_Port, EPD_RST_Pin, GPIO_PIN_SET);
-
-    return 0;
-}
-
-void DEV_Module_Exit(void)
-{
-
-    HAL_GPIO_WritePin(EPD_DC_GPIO_Port, EPD_DC_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(EPD_CS_GPIO_Port, EPD_CS_Pin, GPIO_PIN_RESET);
-
-    //close 5V
-    HAL_GPIO_WritePin(EPD_RST_GPIO_Port, EPD_RST_Pin, GPIO_PIN_RESET);
-}
-
-int EPD_Test(void)
-{
-    printf("EPD_1in54_V2_test Demo\r\n");
-    DEV_Module_Init();
-
-    printf("e-Paper Init and Clear...\r\n");
-    EPD_1IN54_V2_Init();
-    EPD_1IN54_V2_Clear();
-    HAL_Delay(500);
-
-    //Create a new image cache
-    uint8_t *BlackImage;
-    /* you have to edit the startup_stm32fxxx.s file and set a big enough heap size */
-    uint16_t Imagesize = ((EPD_1IN54_V2_WIDTH % 8 == 0)? (EPD_1IN54_V2_WIDTH / 8 ): (EPD_1IN54_V2_WIDTH / 8 + 1)) * EPD_1IN54_V2_HEIGHT;
-    if((BlackImage = (uint8_t *)malloc(Imagesize)) == NULL) {
-        printf("Failed to apply for black memory...\r\n");
-        return -1;
-    }
-    printf("Paint_NewImage\r\n");
-    Paint_NewImage(BlackImage, EPD_1IN54_V2_WIDTH, EPD_1IN54_V2_HEIGHT, 270, WHITE);
-
-#if 1   //show image for array
-    printf("show image for array\r\n");
-    Paint_SelectImage(BlackImage);
-    Paint_Clear(WHITE);
-
-    EPD_1IN54_V2_Display(BlackImage);
-    HAL_Delay(2000);
-#endif
-
-#if 1   // Drawing on the image
-    printf("Drawing\r\n");
-    //1.Select Image
-    Paint_SelectImage(BlackImage);
-    Paint_Clear(WHITE);
-
-    // 2.Drawing on the image
-
-    Paint_DrawString_EN_4x4Blocks(5, 85, "waveshare", &Font8, BLACK, WHITE);
-
-    EPD_1IN54_V2_Display(BlackImage);
-    HAL_Delay(2000);
-    // my test code
-    /*
-    printf("Drawing pixelated eight\r\n");
-    Paint_SelectImage(BlackImage);
-    Paint_Clear(WHITE);
-
-    Paint_DrawPoint(10, 10, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-    Paint_DrawPoint(15, 10, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-
-    Paint_DrawPoint(5, 15, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-    Paint_DrawPoint(20, 15, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-
-    Paint_DrawPoint(5, 20, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-	Paint_DrawPoint(20, 20, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-
-    Paint_DrawPoint(10, 25, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-    Paint_DrawPoint(15, 25, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-
-    Paint_DrawPoint(5, 30, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-	Paint_DrawPoint(20, 30, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-
-	Paint_DrawPoint(5, 35, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-	Paint_DrawPoint(20, 35, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-
-    Paint_DrawPoint(10, 40, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-    Paint_DrawPoint(15, 40, BLACK, DOT_PIXEL_5X5, DOT_STYLE_DFT);
-
-    printf("Displaying...\r\n");
-    EPD_1IN54_V2_Display(BlackImage);
-	HAL_Delay(2000);
-	*/
-
-#endif
-
-    printf("Clear...\r\n");
-    EPD_1IN54_V2_Init();
-    EPD_1IN54_V2_Clear();
-
-    printf("Goto Sleep...\r\n");
-    EPD_1IN54_V2_Sleep();
-    free(BlackImage);
-    BlackImage = NULL;
-
-    // close 5V
-    printf("close 5V, Module enters 0 power consumption ...\r\n");
-    DEV_Module_Exit();
-
-    return 0;
-}
 
 /* USER CODE END 0 */
 

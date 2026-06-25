@@ -47,6 +47,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     Modules/EPD/epd.c
     Modules/EPD/GUI_Paint.c
+    Modules/EPD/epd_util.c
     Modules/EPD/font8.c
     Modules/EPD/font12.c
     Modules/EPD/font24.c
