@@ -865,3 +865,95 @@ void Paint_DrawBitMap_Block(const unsigned char* image_buffer, uint8_t Region)
 				}
 		}
 }
+
+/******************************************************************************
+function: Show English characters with each pixel enlarged x4
+parameter:
+    Xpoint           ：X coordinate
+    Ypoint           ：Y coordinate
+    Acsii_Char       ：To display the English characters
+    Font             ：A structure pointer that displays a character size
+    Color_Foreground : Select the foreground color
+    Color_Background : Select the background color
+******************************************************************************/
+void Paint_DrawChar_4x4Blocks(uint16_t Xpoint, uint16_t Ypoint, const char Acsii_Char,
+                    sFONT* Font, uint16_t Color_Foreground, uint16_t Color_Background)
+{
+    uint16_t Page, Column;
+
+    if (Xpoint > Paint.Width || Ypoint > Paint.Height) {
+        //Debug("Paint_DrawChar Input exceeds the normal display range\r\n");
+        return;
+    }
+
+    uint32_t Char_Offset = (Acsii_Char - ' ') * Font->Height * (Font->Width / 8 + (Font->Width % 8 ? 1 : 0));
+    const unsigned char *ptr = &Font->table[Char_Offset];
+
+    for (Page = 0; Page < Font->Height; Page ++ ) {
+        for (Column = 0; Column < Font->Width; Column ++ ) {
+
+            //To determine whether the font background color and screen background color is consistent
+            if (FONT_BACKGROUND == Color_Background) { //this process is to speed up the scan
+                if (*ptr & (0x80 >> (Column % 8)))
+                    Paint_DrawRectangle(Xpoint + (Column * 4), Ypoint + (Page * 4),Xpoint + (Column * 4) + 4, Ypoint + (Page * 4) + 4, Color_Foreground,DOT_PIXEL_1X1,DRAW_FILL_FULL);
+                    // Paint_DrawPoint(Xpoint + Column, Ypoint + Page, Color_Foreground, DOT_PIXEL_DFT, DOT_STYLE_DFT);
+            } else {
+                if (*ptr & (0x80 >> (Column % 8))) {
+                    Paint_DrawRectangle(Xpoint + (Column * 4), Ypoint + (Page * 4),Xpoint + (Column * 4) + 4, Ypoint + (Page * 4) + 4, Color_Foreground,DOT_PIXEL_1X1,DRAW_FILL_FULL);
+                    // Paint_DrawPoint(Xpoint + Column, Ypoint + Page, Color_Foreground, DOT_PIXEL_DFT, DOT_STYLE_DFT);
+                } else {
+                    Paint_DrawRectangle(Xpoint + (Column * 4), Ypoint + (Page * 4),Xpoint + (Column * 4) + 4, Ypoint + (Page * 4) + 4, Color_Background,DOT_PIXEL_1X1,DRAW_FILL_FULL);
+                    // Paint_DrawPoint(Xpoint + Column, Ypoint + Page, Color_Background, DOT_PIXEL_DFT, DOT_STYLE_DFT);
+                }
+            }
+            //One pixel is 8 bits
+            if (Column % 8 == 7)
+                ptr++;
+        }// Write a line
+        if (Font->Width % 8 != 0)
+            ptr++;
+    }// Write all
+}
+
+/******************************************************************************
+function:	Display the string with each pixel enlarged 4x
+parameter:
+    Xstart           ：X coordinate
+    Ystart           ：Y coordinate
+    pString          ：The first address of the English string to be displayed
+    Font             ：A structure pointer that displays a character size
+    Color_Foreground : Select the foreground color
+    Color_Background : Select the background color
+******************************************************************************/
+void Paint_DrawString_EN_4x4Blocks(uint16_t Xstart, uint16_t Ystart, const char * pString,
+                         sFONT* Font, uint16_t Color_Foreground, uint16_t Color_Background)
+{
+    uint16_t Xpoint = Xstart;
+    uint16_t Ypoint = Ystart;
+
+    if (Xstart > Paint.Width || Ystart > Paint.Height) {
+        //Debug("Paint_DrawString_EN Input exceeds the normal display range\r\n");
+        return;
+    }
+
+    while (* pString != '\0') {
+        //if X direction filled , reposition to(Xstart,Ypoint),Ypoint is Y direction plus the Height of the character
+        if ((Xpoint + Font->Width ) > Paint.Width ) {
+            Xpoint = Xstart;
+            Ypoint += (Font->Height)*4; // added *4 because a pixel is a 4x4 block now
+        }
+
+        // If the Y direction is full, reposition to(Xstart, Ystart)
+        if ((Ypoint  + Font->Height ) > Paint.Height ) {
+            Xpoint = Xstart;
+            Ypoint = Ystart;
+        }
+        Paint_DrawChar_4x4Blocks(Xpoint, Ypoint, * pString, Font, Color_Foreground, Color_Background);
+
+        //The next character of the address
+        pString ++;
+
+        //The next word of the abscissa increases the font of the broadband
+        Xpoint += (Font->Width)*4;
+    }
+}
