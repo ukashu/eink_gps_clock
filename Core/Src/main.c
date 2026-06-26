@@ -28,6 +28,7 @@
 #include "epd_util.h"
 #include <stdio.h>
 #include "string.h"
+#include "stdlib.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -66,17 +67,67 @@ static uint8_t rx_data;
 
 RTC_TimeTypeDef time;
 RTC_DateTypeDef date;
+RTC_TimeTypeDef new_time = {0};
+RTC_DateTypeDef new_date = {0};
 
-void parse_gnzda(char *line_buffer) {
+void parse_gnzda(char *line_buffer, RTC_TimeTypeDef *new_time, RTC_DateTypeDef *new_date) {
+  char temp[LINE_MAX_LENGTH+1];
   if (strncmp(line_buffer, "$GNZDA,", 7) != 0) {
     return;
   }
   printf("%s\n", line_buffer);
 
+  strncpy(temp, line_buffer + 7, sizeof(temp)-1);
+  temp[sizeof(temp)-1] = '\0';
+  char *token;
+  token = strtok(temp, ",");
+  if (token && strlen(token)>=6) {
+    // extract time
+    char hh[3] = {token[0], token[1], '\0'};
+    char mm[3] = {token[2], token[3], '\0'};
+    char ss[3] = {token[4], token[5], '\0'};
+    new_time->Hours = atoi(hh);
+    new_time->Minutes = atoi(mm);
+    new_time->Seconds = atoi(ss);
+    HAL_RTC_SetTime(&hrtc, new_time, RTC_FORMAT_BIN);
+  }
+
+  int date_fields = 0;
+  //extract Day
+  token = strtok(NULL, ",");
+  if (token && strlen(token)>=2)
+  {
+    char day[3] = {token[0], token[1], '\0'};
+    new_date->Date = atoi(day);
+    date_fields++;
+  }
+
+  //extract Month
+  token = strtok(NULL, ",");
+  if (token && strlen(token)>=2)
+  {
+    char month[3] = {token[0], token[1], '\0'};
+    new_date->Month = atoi(month);
+    date_fields++;
+  }
+
+  //extract year
+  token = strtok(NULL, ",");
+  if (token && strlen(token)>=4)
+  {
+    char year[5] = {token[0], token[1], token[2], token[3], '\0'};
+    new_date->Year = atoi(year)%100;
+    date_fields++;
+  }
+
+  if (date_fields == 3) {
+    HAL_RTC_SetDate(&hrtc, new_date, RTC_FORMAT_BIN);
+  }
+
   HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
   HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
 
-  printf("RTC: %02d-%02d-%02d\n", time.Hours, time.Minutes, time.Seconds);
+  printf("RTC: %02d-%02d-%02dm %02d:%02d:%04d\n", time.Hours, time.Minutes, time.Seconds, date.Date, date.Month, date.Year);
 }
 
 void line_append(uint8_t value)
@@ -91,7 +142,7 @@ void line_append(uint8_t value)
 			// jeśli bufor nie jest pusty to dodajemy 0 na końcu linii
 			line_buffer[line_length] = '\0';
 			// przetwarzamy dane
-      parse_gnzda(line_buffer);
+      parse_gnzda(line_buffer, &new_time, &new_date);
 			// zaczynamy zbieranie danych od nowa
 			line_length = 0;
 		}
