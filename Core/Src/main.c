@@ -25,6 +25,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "epd_util.h"
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,6 +57,42 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#define LINE_MAX_LENGTH	128
+static char line_buffer[LINE_MAX_LENGTH + 1];
+static uint32_t line_length;
+static uint8_t rx_data;
+
+void line_append(uint8_t value)
+{
+	if (value == '\r' || value == '\n') {
+		// odebraliśmy znak końca linii
+		if (line_length > 0) {
+			// jeśli bufor nie jest pusty to dodajemy 0 na końcu linii
+			line_buffer[line_length] = '\0';
+			// przetwarzamy dane
+			printf("Otrzymano: %s\n", line_buffer);
+			// zaczynamy zbieranie danych od nowa
+			line_length = 0;
+		}
+	}
+	else {
+		if (line_length >= LINE_MAX_LENGTH) {
+			// za dużo danych, usuwamy wszystko co odebraliśmy dotychczas
+			line_length = 0;
+		}
+		// dopisujemy wartość do bufora
+		line_buffer[line_length++] = value;
+	}
+}
+
+// Interrupt callback for UART reception
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+    if (huart->Instance == USART2) {  // Check if it's from USART2 (GPS)
+    	line_append(rx_data);
+    	HAL_UART_Receive_IT(&huart2, &rx_data, 1);  // Restart reception
+    }
+}
+
 // printf redirection to USART2 (Terminal)
 int __io_putchar(int ch)
 {
@@ -103,7 +140,8 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  EPD_Test();
+  HAL_UART_Receive_IT(&huart2, &rx_data, 1);
+  // EPD_Test();
 
   /* USER CODE END 2 */
 
@@ -111,7 +149,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_Delay(10000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
