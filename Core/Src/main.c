@@ -171,7 +171,6 @@ int __io_putchar(int ch)
     return 1;
 }
 
-
 /* USER CODE END 0 */
 
 /**
@@ -203,13 +202,14 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_LPUART1_UART_Init();
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_RTC_Init();
+  MX_LPUART1_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2, &rx_data, 1);
   // EPD_Test();
+  EPD_Init();
 
   /* USER CODE END 2 */
 
@@ -219,8 +219,12 @@ int main(void)
   {
     HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
     HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
-    HAL_Delay(1000);
-    printf("RTC: %02d-%02d-%02dm %02d:%02d:%04d\n", time.Hours, time.Minutes, time.Seconds, date.Date, date.Month, date.Year);
+    //printf("RTC: %02d-%02d-%02dm %02d:%02d:%02d\n", time.Hours, time.Minutes, time.Seconds, date.Date, date.Month, date.Year);
+
+    EPD_Reinit();
+    EPD_PrintDateTime(&time, &date);
+    EPD_SleepNoClear();
+    HAL_Delay(10000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

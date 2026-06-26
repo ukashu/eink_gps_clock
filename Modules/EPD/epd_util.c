@@ -27,6 +27,65 @@ void DEV_Module_Exit(void)
     HAL_GPIO_WritePin(EPD_RST_GPIO_Port, EPD_RST_Pin, GPIO_PIN_RESET);
 }
 
+#define IMAGE_SIZE (((EPD_1IN54_V2_WIDTH + 7) / 8) * EPD_1IN54_V2_HEIGHT)
+
+static uint8_t BlackImage[IMAGE_SIZE];
+
+int EPD_PrintDateTime(RTC_TimeTypeDef *time, RTC_DateTypeDef *date) {
+
+    printf("Drawing\r\n");
+    //1.Select Image
+    Paint_SelectImage(BlackImage);
+    Paint_Clear(WHITE);
+
+    char buffer[32];
+
+    snprintf(buffer, sizeof(buffer), "%02d-%02d-%02dm %02d:%02d:%02d\n", time->Hours, time->Minutes, time->Seconds, date->Date, date->Month, date->Year);
+
+    // 2.Drawing on the image
+    Paint_DrawString_EN_4x4Blocks(5, 85, buffer, &Font8, BLACK, WHITE);
+
+    EPD_1IN54_V2_Display(BlackImage);
+
+    return 0;
+}
+
+void EPD_SleepNoClear() {
+    printf("Goto Sleep...\r\n");
+    EPD_1IN54_V2_Sleep();
+
+    printf("Setting RST pin to low...\r\n");
+    DEV_Module_Exit();
+}
+
+void EPD_Init() {
+    printf("HW initializing e-ink display\r\n");
+    DEV_Module_Init();
+
+    printf("e-Paper Init and Clear...\r\n");
+    EPD_1IN54_V2_Init();
+    EPD_1IN54_V2_Clear();
+    HAL_Delay(500);
+
+    printf("Paint_NewImage\r\n");
+    Paint_NewImage(BlackImage,
+                   EPD_1IN54_V2_WIDTH,
+                   EPD_1IN54_V2_HEIGHT,
+                   270,
+                   WHITE);
+}
+
+void EPD_Reinit() {
+    printf("Reinitializing e-ink display\r\n");
+    DEV_Module_Init();
+
+    printf("e-Paper Init and Clear...\r\n");
+    EPD_1IN54_V2_Init();
+    EPD_1IN54_V2_Clear();
+    HAL_Delay(500);
+}
+
+
 int EPD_Test(void)
 {
     printf("EPD_1in54_V2_test Demo\r\n");
@@ -37,16 +96,13 @@ int EPD_Test(void)
     EPD_1IN54_V2_Clear();
     HAL_Delay(500);
 
-    //Create a new image cache
-    uint8_t *BlackImage;
     /* you have to edit the startup_stm32fxxx.s file and set a big enough heap size */
-    uint16_t Imagesize = ((EPD_1IN54_V2_WIDTH % 8 == 0)? (EPD_1IN54_V2_WIDTH / 8 ): (EPD_1IN54_V2_WIDTH / 8 + 1)) * EPD_1IN54_V2_HEIGHT;
-    if((BlackImage = (uint8_t *)malloc(Imagesize)) == NULL) {
-        printf("Failed to apply for black memory...\r\n");
-        return -1;
-    }
     printf("Paint_NewImage\r\n");
-    Paint_NewImage(BlackImage, EPD_1IN54_V2_WIDTH, EPD_1IN54_V2_HEIGHT, 270, WHITE);
+    Paint_NewImage(BlackImage,
+                   EPD_1IN54_V2_WIDTH,
+                   EPD_1IN54_V2_HEIGHT,
+                   270,
+                   WHITE);
 
 #if 0   //print image
     printf("show image for array\r\n");
@@ -77,8 +133,6 @@ int EPD_Test(void)
 
     printf("Goto Sleep...\r\n");
     EPD_1IN54_V2_Sleep();
-    free(BlackImage);
-    BlackImage = NULL;
 
     // close 5V
     printf("close 5V, Module enters 0 power consumption ...\r\n");
