@@ -123,11 +123,6 @@ void parse_gnzda(char *line_buffer, RTC_TimeTypeDef *new_time, RTC_DateTypeDef *
   if (date_fields == 3) {
     HAL_RTC_SetDate(&hrtc, new_date, RTC_FORMAT_BIN);
   }
-
-  HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
-  HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
-
-  printf("RTC: %02d-%02d-%02dm %02d:%02d:%04d\n", time.Hours, time.Minutes, time.Seconds, date.Date, date.Month, date.Year);
 }
 
 void line_append(uint8_t value)
@@ -222,6 +217,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+    HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+    HAL_Delay(1000);
+    printf("RTC: %02d-%02d-%02dm %02d:%02d:%04d\n", time.Hours, time.Minutes, time.Seconds, date.Date, date.Month, date.Year);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

@@ -1,0 +1,3 @@
+- [ ] add a timeout for GPS sync
+- [ ] display time on eink every minute, low power mode in between
+- [ ] enable GPS syncing every 2 minutes
