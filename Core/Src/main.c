@@ -64,13 +64,17 @@ static uint8_t rx_data;
 
 void line_append(uint8_t value)
 {
+  if (line_length == 0) {
+    if (value != '$')
+      return;
+  }
 	if (value == '\r' || value == '\n') {
 		// odebraliśmy znak końca linii
 		if (line_length > 0) {
 			// jeśli bufor nie jest pusty to dodajemy 0 na końcu linii
 			line_buffer[line_length] = '\0';
 			// przetwarzamy dane
-			printf("Otrzymano: %s\n", line_buffer);
+			printf("%s\n", line_buffer);
 			// zaczynamy zbieranie danych od nowa
 			line_length = 0;
 		}
