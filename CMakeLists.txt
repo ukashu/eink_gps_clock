@@ -49,8 +49,6 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Modules/EPD/GUI_Paint.c
     Modules/EPD/epd_util.c
     Modules/EPD/font8.c
-    Modules/EPD/font12.c
-    Modules/EPD/font42.c
 )
 
 # Add include paths

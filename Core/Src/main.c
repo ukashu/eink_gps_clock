@@ -77,7 +77,7 @@ void parse_gnzda(char *line_buffer, RTC_TimeTypeDef *new_time, RTC_DateTypeDef *
   if (strncmp(line_buffer, "$GNZDA,", 7) != 0) {
     return;
   }
-  printf("%s\n", line_buffer);
+  //printf("%s\n", line_buffer);
 
   strncpy(temp, line_buffer + 7, sizeof(temp)-1);
   temp[sizeof(temp)-1] = '\0';
@@ -220,7 +220,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2, &rx_data, 1);
   // EPD_Test();
-  //EPD_Init();
+  EPD_Init();
 
   /* USER CODE END 2 */
 
@@ -254,13 +254,13 @@ int main(void)
     switch(state) {
       case 0:
         // go to sleep
-        printf("Setting wakeup timer\n");
+        //printf("Setting wakeup timer\n");
         HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
         if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0xA, RTC_WAKEUPCLOCK_CK_SPRE_16BITS) != HAL_OK) {
           Error_Handler();
         }
         //HAL_Delay(100);
-        printf("Going to STOP mode\n");
+        //printf("Going to STOP mode\n");
         HAL_SuspendTick();
         HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
         SystemClock_Config();
@@ -268,10 +268,17 @@ int main(void)
       case 1:
         HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
         // do job, when done change state to 0
-        printf("I woke up!\n");
-        printf("Doing job...\n");
+        //printf("I woke up!\n");
+        //printf("Doing job...\n");
         HAL_Delay(4000);
-        printf("Job done! changing state...\n");
+        //HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+        //HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+        //printf("RTC: %02d-%02d-%02dm %02d:%02d:%02d\n", time.Hours, time.Minutes, time.Seconds, date.Date, date.Month, date.Year);
+
+        EPD_Reinit();
+        EPD_PrintDateTime(&time, &date);
+        EPD_SleepNoClear();
+        //printf("Job done! changing state...\n");
         state = 0;
         HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
         break;

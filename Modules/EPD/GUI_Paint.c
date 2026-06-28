@@ -250,7 +250,7 @@ void Paint_SetPixel(uint16_t Xpoint, uint16_t Ypoint, uint16_t Color)
 		uint8_t Rdata = Paint.Image[Addr];
 		Rdata = Rdata & (~(0xF0 >> ((X % 2)*4)));//Clear first, then set value
 		Paint.Image[Addr] = Rdata | ((Color << 4) >> ((X % 2)*4));
-		printf("Add =  %lu ,data = %d\r\n",(unsigned long)Addr,Rdata);
+		//printf("Add =  %lu ,data = %d\r\n",(unsigned long)Addr,Rdata);
 	}
 }
 
@@ -318,8 +318,8 @@ void Paint_DrawPoint(uint16_t Xpoint, uint16_t Ypoint, uint16_t Color,
 {
     if (Xpoint > Paint.Width || Ypoint > Paint.Height) {
         //Debug("Paint_DrawPoint Input exceeds the normal display range\r\n");
-				printf("Xpoint = %d , Paint.Width = %d  \r\n ",Xpoint,Paint.Width);
-				printf("Ypoint = %d , Paint.Height = %d  \r\n ",Ypoint,Paint.Height);
+				//printf("Xpoint = %d , Paint.Width = %d  \r\n ",Xpoint,Paint.Width);
+				//printf("Ypoint = %d , Paint.Height = %d  \r\n ",Ypoint,Paint.Height);
         return;
     }
 

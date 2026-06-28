@@ -33,7 +33,7 @@ static uint8_t BlackImage[IMAGE_SIZE];
 
 int EPD_PrintDateTime(RTC_TimeTypeDef *time, RTC_DateTypeDef *date) {
 
-    printf("Drawing\r\n");
+    //printf("Drawing\r\n");
     //1.Select Image
     Paint_SelectImage(BlackImage);
     Paint_Clear(WHITE);
@@ -51,23 +51,23 @@ int EPD_PrintDateTime(RTC_TimeTypeDef *time, RTC_DateTypeDef *date) {
 }
 
 void EPD_SleepNoClear() {
-    printf("Goto Sleep...\r\n");
+    //printf("Goto Sleep...\r\n");
     EPD_1IN54_V2_Sleep();
 
-    printf("Setting RST pin to low...\r\n");
+    //printf("Setting RST pin to low...\r\n");
     DEV_Module_Exit();
 }
 
 void EPD_Init() {
-    printf("HW initializing e-ink display\r\n");
+    //printf("HW initializing e-ink display\r\n");
     DEV_Module_Init();
 
-    printf("e-Paper Init and Clear...\r\n");
+    //printf("e-Paper Init and Clear...\r\n");
     EPD_1IN54_V2_Init();
     EPD_1IN54_V2_Clear();
     HAL_Delay(500);
 
-    printf("Paint_NewImage\r\n");
+    //printf("Paint_NewImage\r\n");
     Paint_NewImage(BlackImage,
                    EPD_1IN54_V2_WIDTH,
                    EPD_1IN54_V2_HEIGHT,
@@ -76,10 +76,10 @@ void EPD_Init() {
 }
 
 void EPD_Reinit() {
-    printf("Reinitializing e-ink display\r\n");
+    //printf("Reinitializing e-ink display\r\n");
     DEV_Module_Init();
 
-    printf("e-Paper Init and Clear...\r\n");
+    //printf("e-Paper Init and Clear...\r\n");
     EPD_1IN54_V2_Init();
     EPD_1IN54_V2_Clear();
     HAL_Delay(500);
@@ -88,16 +88,16 @@ void EPD_Reinit() {
 
 int EPD_Test(void)
 {
-    printf("EPD_1in54_V2_test Demo\r\n");
+    //printf("EPD_1in54_V2_test Demo\r\n");
     DEV_Module_Init();
 
-    printf("e-Paper Init and Clear...\r\n");
+    //printf("e-Paper Init and Clear...\r\n");
     EPD_1IN54_V2_Init();
     EPD_1IN54_V2_Clear();
     HAL_Delay(500);
 
     /* you have to edit the startup_stm32fxxx.s file and set a big enough heap size */
-    printf("Paint_NewImage\r\n");
+    //printf("Paint_NewImage\r\n");
     Paint_NewImage(BlackImage,
                    EPD_1IN54_V2_WIDTH,
                    EPD_1IN54_V2_HEIGHT,
@@ -114,7 +114,7 @@ int EPD_Test(void)
 #endif
 
 #if 1   //Draw on screen
-    printf("Drawing\r\n");
+    //printf("Drawing\r\n");
     //1.Select Image
     Paint_SelectImage(BlackImage);
     Paint_Clear(WHITE);
@@ -127,15 +127,15 @@ int EPD_Test(void)
 
 #endif
 
-    printf("Clear...\r\n");
+    //printf("Clear...\r\n");
     EPD_1IN54_V2_Init();
     EPD_1IN54_V2_Clear();
 
-    printf("Goto Sleep...\r\n");
+    //printf("Goto Sleep...\r\n");
     EPD_1IN54_V2_Sleep();
 
     // close 5V
-    printf("close 5V, Module enters 0 power consumption ...\r\n");
+    //printf("close 5V, Module enters 0 power consumption ...\r\n");
     DEV_Module_Exit();
 
     return 0;
