@@ -18,9 +18,11 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "usart.h"
 #include "rtc.h"
 #include "spi.h"
+#include "stm32l0xx_hal_gpio.h"
+#include "stm32l0xx_hal_rtc_ex.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -160,6 +162,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     }
 }
 
+/*
 // printf redirection to USART2 (Terminal)
 int __io_putchar(int ch)
 {
@@ -169,6 +172,15 @@ int __io_putchar(int ch)
     }
     HAL_UART_Transmit(&hlpuart1, (uint8_t*)&ch, 1, 1000);
     return 1;
+}
+*/
+
+//int state = 1; // 0 - job done, 1 - doing job
+
+void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc) {
+  //__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
+  //HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+  //state = 1;
 }
 
 /* USER CODE END 0 */
@@ -205,11 +217,10 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_RTC_Init();
-  MX_LPUART1_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2, &rx_data, 1);
   // EPD_Test();
-  EPD_Init();
+  //EPD_Init();
 
   /* USER CODE END 2 */
 
@@ -217,14 +228,53 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
-    HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+    HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+    HAL_Delay(4000);
+    HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+    HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+    if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0xA, RTC_WAKEUPCLOCK_CK_SPRE_16BITS) != HAL_OK) {
+      Error_Handler();
+    }
+    //HAL_Delay(100);
+    HAL_SuspendTick();
+    HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+    SystemClock_Config();
+
+    //HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+    //HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
     //printf("RTC: %02d-%02d-%02dm %02d:%02d:%02d\n", time.Hours, time.Minutes, time.Seconds, date.Date, date.Month, date.Year);
 
-    EPD_Reinit();
-    EPD_PrintDateTime(&time, &date);
-    EPD_SleepNoClear();
-    HAL_Delay(10000);
+    //EPD_Reinit();
+    //EPD_PrintDateTime(&time, &date);
+    //EPD_SleepNoClear();
+    //HAL_Delay(10000);
+
+    /*
+    switch(state) {
+      case 0:
+        // go to sleep
+        printf("Going to sleep...\n");
+        printf("Setting wakeup timer\n");
+        HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+        HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0xA,RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+        printf("Going to STOP mode\n");
+        HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+        break;
+      case 1:
+        HAL_GPIO_WritePin(LD3_GPIO_Port,LD3_Pin,GPIO_PIN_SET);
+        // do job, when done change state to 0
+        printf("I woke up!\n");
+        printf("Doing job...\n");
+        HAL_Delay(4000);
+        printf("Job done! changing state...\n");
+        HAL_GPIO_WritePin(LD3_GPIO_Port,LD3_Pin,GPIO_PIN_RESET);
+        state = 0;
+        break;
+      default:
+    }
+    */
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -280,10 +330,8 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2|RCC_PERIPHCLK_LPUART1
-                              |RCC_PERIPHCLK_RTC;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2|RCC_PERIPHCLK_RTC;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
-  PeriphClkInit.Lpuart1ClockSelection = RCC_LPUART1CLKSOURCE_PCLK1;
   PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
