@@ -175,12 +175,25 @@ int __io_putchar(int ch)
 }
 */
 
+/*
+states:
+0 - go to sleep
+1 - print hour to eink
+2 - synchronize with GPS
+*/
 int state = 1; // 0 - job done, 1 - doing job
+int wakeUpsBeforeGPSSync = 4;
 
 void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc) {
   //__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
   //HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-  state = 1;
+  wakeUpsBeforeGPSSync--;
+  if (wakeUpsBeforeGPSSync == 0) {
+    state = 2;
+    wakeUpsBeforeGPSSync = 4;
+  } else {
+    state = 1;
+  }
 }
 
 /* USER CODE END 0 */
@@ -270,9 +283,8 @@ int main(void)
         // do job, when done change state to 0
         //printf("I woke up!\n");
         //printf("Doing job...\n");
-        HAL_Delay(4000);
-        //HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
-        //HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
+        HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
+        HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
         //printf("RTC: %02d-%02d-%02dm %02d:%02d:%02d\n", time.Hours, time.Minutes, time.Seconds, date.Date, date.Month, date.Year);
 
         EPD_Reinit();
@@ -282,6 +294,17 @@ int main(void)
         state = 0;
         HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
         break;
+      case 2:
+        HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+        HAL_Delay(100);
+        HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+        HAL_Delay(100);
+        HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+        // turn on GPS pin
+        HAL_Delay(4000);
+        // turn off GPS pin
+        state = 1;
+        HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
       default:
     }
 
