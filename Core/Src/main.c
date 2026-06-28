@@ -20,8 +20,6 @@
 #include "main.h"
 #include "rtc.h"
 #include "spi.h"
-#include "stm32l0xx_hal_gpio.h"
-#include "stm32l0xx_hal_rtc_ex.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -72,12 +70,25 @@ RTC_DateTypeDef date;
 RTC_TimeTypeDef new_time = {0};
 RTC_DateTypeDef new_date = {0};
 
+int GPS_SyncAttempts = 0;
+/*
+states:
+0 - go to sleep
+1 - print hour to eink
+2 - synchronizing with GPS
+3 - GPS sync success
+4 - GPS sync unsuccessful
+*/
+int state = 1;
+int time_set = 0;
+
 void parse_gnzda(char *line_buffer, RTC_TimeTypeDef *new_time, RTC_DateTypeDef *new_date) {
   char temp[LINE_MAX_LENGTH+1];
   if (strncmp(line_buffer, "$GNZDA,", 7) != 0) {
     return;
   }
   //printf("%s\n", line_buffer);
+  GPS_SyncAttempts++;
 
   strncpy(temp, line_buffer + 7, sizeof(temp)-1);
   temp[sizeof(temp)-1] = '\0';
@@ -88,10 +99,11 @@ void parse_gnzda(char *line_buffer, RTC_TimeTypeDef *new_time, RTC_DateTypeDef *
     char hh[3] = {token[0], token[1], '\0'};
     char mm[3] = {token[2], token[3], '\0'};
     char ss[3] = {token[4], token[5], '\0'};
-    new_time->Hours = atoi(hh);
-    new_time->Minutes = atoi(mm);
-    new_time->Seconds = atoi(ss);
+    new_time->Hours = (hh[0] - '0') * 10 + (hh[1] - '0');
+    new_time->Minutes = (mm[0] - '0') * 10 + (mm[1] - '0');
+    new_time->Seconds = (ss[0] - '0') * 10 + (ss[1] - '0');
     HAL_RTC_SetTime(&hrtc, new_time, RTC_FORMAT_BIN);
+    time_set = 1;
   }
 
   int date_fields = 0;
@@ -99,8 +111,7 @@ void parse_gnzda(char *line_buffer, RTC_TimeTypeDef *new_time, RTC_DateTypeDef *
   token = strtok(NULL, ",");
   if (token && strlen(token)>=2)
   {
-    char day[3] = {token[0], token[1], '\0'};
-    new_date->Date = atoi(day);
+    new_date->Date = (token[0] - '0') * 10 + (token[1] - '0');
     date_fields++;
   }
 
@@ -108,8 +119,7 @@ void parse_gnzda(char *line_buffer, RTC_TimeTypeDef *new_time, RTC_DateTypeDef *
   token = strtok(NULL, ",");
   if (token && strlen(token)>=2)
   {
-    char month[3] = {token[0], token[1], '\0'};
-    new_date->Month = atoi(month);
+    new_date->Month = (token[0] - '0') * 10 + (token[1] - '0');
     date_fields++;
   }
 
@@ -117,13 +127,17 @@ void parse_gnzda(char *line_buffer, RTC_TimeTypeDef *new_time, RTC_DateTypeDef *
   token = strtok(NULL, ",");
   if (token && strlen(token)>=4)
   {
-    char year[5] = {token[0], token[1], token[2], token[3], '\0'};
-    new_date->Year = atoi(year)%100;
+    new_date->Year = (token[0] - '0') * 1000 + (token[1] - '0') * 100 + (token[2] - '0') * 10 + (token[3] - '0');
+    new_date->Year %= 100;
     date_fields++;
   }
 
   if (date_fields == 3) {
     HAL_RTC_SetDate(&hrtc, new_date, RTC_FORMAT_BIN);
+  }
+  if (time_set == 1) {
+    //state = 3;
+    time_set = 0;
   }
 }
 
@@ -175,14 +189,7 @@ int __io_putchar(int ch)
 }
 */
 
-/*
-states:
-0 - go to sleep
-1 - print hour to eink
-2 - synchronize with GPS
-*/
-int state = 1; // 0 - job done, 1 - doing job
-int wakeUpsBeforeGPSSync = 4;
+int wakeUpsBeforeGPSSync = 2;
 
 void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc) {
   //__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
@@ -190,8 +197,8 @@ void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc) {
   wakeUpsBeforeGPSSync--;
   if (wakeUpsBeforeGPSSync == 0) {
     state = 2;
-    wakeUpsBeforeGPSSync = 4;
-  } else {
+    wakeUpsBeforeGPSSync = 2;
+  } else if (state != 2) {
     state = 1;
   }
 }
@@ -234,6 +241,7 @@ int main(void)
   HAL_UART_Receive_IT(&huart2, &rx_data, 1);
   // EPD_Test();
   EPD_Init();
+  HAL_GPIO_WritePin(GPS_EN_GPIO_Port, GPS_EN_Pin, GPIO_PIN_RESET);
 
   /* USER CODE END 2 */
 
@@ -288,23 +296,43 @@ int main(void)
         //printf("RTC: %02d-%02d-%02dm %02d:%02d:%02d\n", time.Hours, time.Minutes, time.Seconds, date.Date, date.Month, date.Year);
 
         EPD_Reinit();
-        EPD_PrintDateTime(&time, &date);
+        EPD_PrintDateTime(&time, &date, "");
         EPD_SleepNoClear();
         //printf("Job done! changing state...\n");
         state = 0;
         HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
         break;
       case 2:
-        HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-        HAL_Delay(100);
-        HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
-        HAL_Delay(100);
-        HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+        if (GPS_SyncAttempts > 128) {
+          state = 4;
+        }
         // turn on GPS pin
-        HAL_Delay(4000);
+        HAL_GPIO_WritePin(GPS_EN_GPIO_Port, GPS_EN_Pin, GPIO_PIN_SET);
+        break;
+      case 3:
+        EPD_Reinit();
+        EPD_PrintDateTime(&time, &date, "GPS sync successful");
+        EPD_SleepNoClear();
         // turn off GPS pin
+        HAL_GPIO_WritePin(GPS_EN_GPIO_Port, GPS_EN_Pin, GPIO_PIN_RESET);
+        // reset syncCountdown
+        wakeUpsBeforeGPSSync = 2;
+        GPS_SyncAttempts = 0;
+        // go to state 1
         state = 1;
-        HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+        break;
+      case 4:
+        EPD_Reinit();
+        EPD_PrintDateTime(&time, &date, "GPS sync failed");
+        EPD_SleepNoClear();
+        // turn off GPS pin
+        HAL_GPIO_WritePin(GPS_EN_GPIO_Port, GPS_EN_Pin, GPIO_PIN_RESET);
+        // reset syncCountdown
+        wakeUpsBeforeGPSSync = 2;
+        GPS_SyncAttempts = 0;
+        // go to state 1
+        state = 1;
+        break;
       default:
     }
 

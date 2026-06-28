@@ -50,10 +50,17 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(EPD_RST_GPIO_Port, EPD_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPS_EN_Pin|LD3_Pin|EPD_CS_Pin|EPD_DC_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LD3_Pin|EPD_CS_Pin|EPD_DC_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(EPD_RST_GPIO_Port, EPD_RST_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : GPS_EN_Pin LD3_Pin EPD_CS_Pin EPD_DC_Pin */
+  GPIO_InitStruct.Pin = GPS_EN_Pin|LD3_Pin|EPD_CS_Pin|EPD_DC_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : EPD_BUSY_Pin */
   GPIO_InitStruct.Pin = EPD_BUSY_Pin;
@@ -67,13 +74,6 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(EPD_RST_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : LD3_Pin EPD_CS_Pin EPD_DC_Pin */
-  GPIO_InitStruct.Pin = LD3_Pin|EPD_CS_Pin|EPD_DC_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 

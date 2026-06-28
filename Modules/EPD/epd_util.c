@@ -31,7 +31,7 @@ void DEV_Module_Exit(void)
 
 static uint8_t BlackImage[IMAGE_SIZE];
 
-int EPD_PrintDateTime(RTC_TimeTypeDef *time, RTC_DateTypeDef *date) {
+int EPD_PrintDateTime(RTC_TimeTypeDef *time, RTC_DateTypeDef *date, char *message) {
 
     //printf("Drawing\r\n");
     //1.Select Image
@@ -44,6 +44,10 @@ int EPD_PrintDateTime(RTC_TimeTypeDef *time, RTC_DateTypeDef *date) {
 
     // 2.Drawing on the image
     Paint_DrawString_EN_4x4Blocks(5, 85, buffer, &Font8, BLACK, WHITE);
+
+    if (message) {
+        Paint_DrawString_EN(5, 130, message, &Font8, BLACK, WHITE);
+    }
 
     EPD_1IN54_V2_Display(BlackImage);
 
