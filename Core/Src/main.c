@@ -175,12 +175,12 @@ int __io_putchar(int ch)
 }
 */
 
-//int state = 1; // 0 - job done, 1 - doing job
+int state = 1; // 0 - job done, 1 - doing job
 
 void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc) {
   //__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
   //HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-  //state = 1;
+  state = 1;
 }
 
 /* USER CODE END 0 */
@@ -228,6 +228,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    /*
     HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
     HAL_Delay(4000);
     HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
@@ -239,6 +240,7 @@ int main(void)
     HAL_SuspendTick();
     HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
     SystemClock_Config();
+    */
 
     //HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
     //HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
@@ -249,30 +251,32 @@ int main(void)
     //EPD_SleepNoClear();
     //HAL_Delay(10000);
 
-    /*
     switch(state) {
       case 0:
         // go to sleep
-        printf("Going to sleep...\n");
         printf("Setting wakeup timer\n");
         HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
-        HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0xA,RTC_WAKEUPCLOCK_CK_SPRE_16BITS);
+        if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0xA, RTC_WAKEUPCLOCK_CK_SPRE_16BITS) != HAL_OK) {
+          Error_Handler();
+        }
+        //HAL_Delay(100);
         printf("Going to STOP mode\n");
+        HAL_SuspendTick();
         HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+        SystemClock_Config();
         break;
       case 1:
-        HAL_GPIO_WritePin(LD3_GPIO_Port,LD3_Pin,GPIO_PIN_SET);
+        HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
         // do job, when done change state to 0
         printf("I woke up!\n");
         printf("Doing job...\n");
         HAL_Delay(4000);
         printf("Job done! changing state...\n");
-        HAL_GPIO_WritePin(LD3_GPIO_Port,LD3_Pin,GPIO_PIN_RESET);
         state = 0;
+        HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
         break;
       default:
     }
-    */
 
 
     /* USER CODE END WHILE */
