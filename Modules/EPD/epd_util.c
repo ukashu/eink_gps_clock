@@ -38,12 +38,15 @@ int EPD_PrintDateTime(RTC_TimeTypeDef *time, RTC_DateTypeDef *date, char *messag
     Paint_SelectImage(BlackImage);
     Paint_Clear(WHITE);
 
-    char buffer[32];
+    char time_buffer[16];
+    char date_buffer[16];
 
-    snprintf(buffer, sizeof(buffer), "%02d-%02d-%02dm %02d:%02d:%02d\n", time->Hours, time->Minutes, time->Seconds, date->Date, date->Month, date->Year);
+    snprintf(time_buffer, sizeof(time_buffer), "%02d:%02d", time->Hours, time->Minutes);
+    snprintf(date_buffer, sizeof(date_buffer), "%02d-%02d-%02d", date->Date, date->Month, date->Year);
 
-    // 2.Drawing on the image
-    Paint_DrawString_EN_4x4Blocks(5, 85, buffer, &Font8, BLACK, WHITE);
+    // Draw time, date and message on the image
+    Paint_DrawString_EN_4x4Blocks(5, 85, time_buffer, &Font8, BLACK, WHITE);
+    Paint_DrawString_EN_4x4Blocks(5, 125, date_buffer, &Font8, BLACK, WHITE);
 
     if (message) {
         Paint_DrawString_EN(5, 180, message, &Font8, BLACK, WHITE);

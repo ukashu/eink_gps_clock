@@ -82,7 +82,7 @@ states:
 3 - GPS sync success
 4 - GPS sync unsuccessful
 */
-int state = 1;
+int state = 2;
 int time_set = 0;
 
 void parse_gnzda(char *line_buffer, RTC_TimeTypeDef *new_time, RTC_DateTypeDef *new_date) {

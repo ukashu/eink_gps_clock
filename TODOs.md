@@ -5,7 +5,7 @@
 - [x] use constants for sync interval etc.
 - [ ] eink should redraw hour even during GPS sync (with GPS sync in progress text or smth)
 - [ ] time not updated when displaying sync success message
-- [ ] on first turn on the clock should sync
-- [ ] weird glyphs at the end of printed time
-- [ ] don't print seconds
-- [ ] print date with `-`, hours with `:`
+- [x] on first turn on the clock should sync
+- [x] weird glyphs at the end of printed time
+- [x] don't print seconds
+- [x] print date with `-`, hours with `:`
