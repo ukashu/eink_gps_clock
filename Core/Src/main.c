@@ -71,7 +71,7 @@ RTC_TimeTypeDef new_time = {0};
 RTC_DateTypeDef new_date = {0};
 
 #define GPS_SYNC_ATTEMPT_TIMEOUT 128
-#define WAKEUPS_BEFORE_SYNC 2
+#define WAKEUPS_BEFORE_SYNC 4
 
 int GPS_SyncAttempts = 0;
 /*
