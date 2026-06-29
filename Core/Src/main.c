@@ -70,6 +70,9 @@ RTC_DateTypeDef date;
 RTC_TimeTypeDef new_time = {0};
 RTC_DateTypeDef new_date = {0};
 
+#define GPS_SYNC_ATTEMPT_TIMEOUT 128
+#define WAKEUPS_BEFORE_SYNC 2
+
 int GPS_SyncAttempts = 0;
 /*
 states:
@@ -87,7 +90,6 @@ void parse_gnzda(char *line_buffer, RTC_TimeTypeDef *new_time, RTC_DateTypeDef *
   if (strncmp(line_buffer, "$GNZDA,", 7) != 0) {
     return;
   }
-  //printf("%s\n", line_buffer);
   GPS_SyncAttempts++;
 
   strncpy(temp, line_buffer + 7, sizeof(temp)-1);
@@ -135,9 +137,12 @@ void parse_gnzda(char *line_buffer, RTC_TimeTypeDef *new_time, RTC_DateTypeDef *
   if (date_fields == 3) {
     HAL_RTC_SetDate(&hrtc, new_date, RTC_FORMAT_BIN);
   }
-  if (time_set == 1) {
-    //state = 3;
+  if (time_set == 1 && date_fields == 3) {
+    // syncing successful
     time_set = 0;
+    date_fields = 0;
+    GPS_SyncAttempts = 0;
+    state = 3;
   }
 }
 
@@ -189,15 +194,13 @@ int __io_putchar(int ch)
 }
 */
 
-int wakeUpsBeforeGPSSync = 2;
+int wakeUpsBeforeGPSSync = WAKEUPS_BEFORE_SYNC;
 
 void HAL_RTCEx_WakeUpTimerEventCallback(RTC_HandleTypeDef *hrtc) {
-  //__HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
-  //HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
   wakeUpsBeforeGPSSync--;
   if (wakeUpsBeforeGPSSync == 0) {
     state = 2;
-    wakeUpsBeforeGPSSync = 2;
+    wakeUpsBeforeGPSSync = WAKEUPS_BEFORE_SYNC;
   } else if (state != 2) {
     state = 1;
   }
@@ -249,39 +252,13 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /*
-    HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-    HAL_Delay(4000);
-    HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
-    HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
-    if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0xA, RTC_WAKEUPCLOCK_CK_SPRE_16BITS) != HAL_OK) {
-      Error_Handler();
-    }
-    //HAL_Delay(100);
-    HAL_SuspendTick();
-    HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
-    SystemClock_Config();
-    */
-
-    //HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
-    //HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
-    //printf("RTC: %02d-%02d-%02dm %02d:%02d:%02d\n", time.Hours, time.Minutes, time.Seconds, date.Date, date.Month, date.Year);
-
-    //EPD_Reinit();
-    //EPD_PrintDateTime(&time, &date);
-    //EPD_SleepNoClear();
-    //HAL_Delay(10000);
-
     switch(state) {
       case 0:
         // go to sleep
-        //printf("Setting wakeup timer\n");
         HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
         if (HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, 0xA, RTC_WAKEUPCLOCK_CK_SPRE_16BITS) != HAL_OK) {
           Error_Handler();
         }
-        //HAL_Delay(100);
-        //printf("Going to STOP mode\n");
         HAL_SuspendTick();
         HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
         SystemClock_Config();
@@ -289,21 +266,17 @@ int main(void)
       case 1:
         HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
         // do job, when done change state to 0
-        //printf("I woke up!\n");
-        //printf("Doing job...\n");
         HAL_RTC_GetTime(&hrtc, &time, RTC_FORMAT_BIN);
         HAL_RTC_GetDate(&hrtc, &date, RTC_FORMAT_BIN);
-        //printf("RTC: %02d-%02d-%02dm %02d:%02d:%02d\n", time.Hours, time.Minutes, time.Seconds, date.Date, date.Month, date.Year);
 
         EPD_Reinit();
         EPD_PrintDateTime(&time, &date, "");
         EPD_SleepNoClear();
-        //printf("Job done! changing state...\n");
         state = 0;
         HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
         break;
       case 2:
-        if (GPS_SyncAttempts > 128) {
+        if (GPS_SyncAttempts > GPS_SYNC_ATTEMPT_TIMEOUT) {
           state = 4;
         }
         // turn on GPS pin
@@ -316,7 +289,7 @@ int main(void)
         // turn off GPS pin
         HAL_GPIO_WritePin(GPS_EN_GPIO_Port, GPS_EN_Pin, GPIO_PIN_RESET);
         // reset syncCountdown
-        wakeUpsBeforeGPSSync = 2;
+        wakeUpsBeforeGPSSync = WAKEUPS_BEFORE_SYNC;
         GPS_SyncAttempts = 0;
         // go to state 1
         state = 1;
@@ -328,7 +301,7 @@ int main(void)
         // turn off GPS pin
         HAL_GPIO_WritePin(GPS_EN_GPIO_Port, GPS_EN_Pin, GPIO_PIN_RESET);
         // reset syncCountdown
-        wakeUpsBeforeGPSSync = 2;
+        wakeUpsBeforeGPSSync = WAKEUPS_BEFORE_SYNC;
         GPS_SyncAttempts = 0;
         // go to state 1
         state = 1;
